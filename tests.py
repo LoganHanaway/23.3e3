@@ -1,3 +1,4 @@
+import unittest
 from unittest import TestCase
 
 from app import app
@@ -107,3 +108,33 @@ class CupcakeViewsTestCase(TestCase):
             })
 
             self.assertEqual(Cupcake.query.count(), 2)
+
+class CupcakeTests(unittest.TestCase):
+    def setUp(self):
+        self.client = app.test_client()
+        app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql:///cupcakes_test"
+        db.create_all()
+
+    def tearDown(self):
+        db.drop_all()
+
+    def test_update_cupcake(self):
+        cupcake = Cupcake(flavor="Vanilla", size="Large", rating=9.5)
+        db.session.add(cupcake)
+        db.session.commit()
+
+        response = self.client.patch(
+            f"/api/cupcakes/{cupcake.id}",
+            json={"flavor": "Chocolate"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json["cupcake"]["flavor"], "Chocolate")
+
+    def test_delete_cupcake(self):
+        cupcake = Cupcake(flavor="Vanilla", size="Large", rating=9.5)
+        db.session.add(cupcake)
+        db.session.commit()
+
+        response = self.client.delete(f"/api/cupcakes/{cupcake.id}")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json["message"], "Deleted")
